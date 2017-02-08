@@ -8,7 +8,6 @@ SHA-256 collision cycle finder.
 License
 -------
 
-SHACollider
 Copyright (C) 2017 JohnHoder, daniel-lc, phagara
 
 This program is free software: you can redistribute it and/or modify
