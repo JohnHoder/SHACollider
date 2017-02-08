@@ -6,11 +6,13 @@ DEBUG = 1
 
 ### DEBUG ###
 ifeq ($(DEBUG), 1)
-	DBGFLAGS = -ggdb -DDEBUG
+	DBGFLAGS = -O0 -DDEBUG
 	CFLAGS += $(DBGFLAGS)
+else
+	CFLAGS += -O2
 endif
 
-CFLAGS += -02
+
 
 %.o: %.c $(DEPS)
 	@echo "[+] CC $< -> $@"
