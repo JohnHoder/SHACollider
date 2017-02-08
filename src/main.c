@@ -38,7 +38,7 @@ int main(void) {
 	bloom_add(&bloom, data, len);
 
 	unsigned long long steps = 1;
-	for (;;) {
+	for(;;) {
 		// calculate hash of the first BITLEN bits of data
 		SHA256_Context ctx;
 		sha256_initialize(&ctx);
@@ -73,8 +73,15 @@ int main(void) {
 		// add the trimmed hash to the bloom filter
 		bloom_add(&bloom, data, len);
 
-		// rinse and repeat
-		steps++;
+		if (steps >= BLOOM_ELEMS) {
+			// continuing would drastically increase false-positive rate
+			printf("Bloom filter capacity exceeded, exiting.\n");
+			break;
+		} else {
+			// rinse and repeat
+			steps++;
+			continue;
+		}
 	}
 
 	return 0;
