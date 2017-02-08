@@ -15,11 +15,11 @@ endif
 
 
 %.o: %.c $(DEPS)
-	@echo "[+] CC $< -> $@"
+	@echo "[+] $(CC) $< -> $@"
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
 $(PROG): $(OBJ)
-	@echo "[+] CC $^ -> $@"
+	@echo "[+] $(CC) $^ -> $@"
 	@$(CC) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
 
 .PHONY: clean
