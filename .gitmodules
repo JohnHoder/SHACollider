@@ -1,0 +1,3 @@
+[submodule "src/libbloom"]
+	path = src/libbloom
+	url = https://github.com/jvirkki/libbloom
