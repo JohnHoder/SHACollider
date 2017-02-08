@@ -1,24 +1,24 @@
-PROG = shacollider
-DEPS = sha256.h sha_types.h
-OBJ = sha256.o main.o
+BIN = shacollider
+DEPS = $(wildcard src/*.h)
+SRC = $(wildcard src/*.c)
+OBJ = $(patsubst %.c, %.o, $(SRC))
+
+CFLAGS += -Wall
 
 DEBUG = 1
 
 ### DEBUG ###
 ifeq ($(DEBUG), 1)
-	DBGFLAGS = -O0 -DDEBUG
-	CFLAGS += $(DBGFLAGS)
+	CFLAGS += -O0 -DDEBUG
 else
 	CFLAGS += -O2
 endif
 
-
-
-%.o: %.c $(DEPS)
+.c.o:
 	@echo "[+] $(CC) $< -> $@"
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
-$(PROG): $(OBJ)
+$(BIN): $(OBJ)
 	@echo "[+] $(CC) $^ -> $@"
 	@$(CC) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
 
@@ -26,4 +26,4 @@ $(PROG): $(OBJ)
 
 clean:
 	@echo "[+] objects and bins cleaned"
-	@rm -f *.o $(PROG)
+	@rm -f $(OBJ) $(BIN)
