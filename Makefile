@@ -1,7 +1,10 @@
 BIN = shacollider
-DEPS = $(wildcard src/*.h)
+DEPS = $(wildcard src/*.h) src/libbloom/bloom.h
 SRC = $(wildcard src/*.c)
 OBJ = $(patsubst %.c, %.o, $(SRC))
+LIBBLOOM = src/libbloom/build/libbloom.a
+LIBS += $(LIBBLOOM) -lm
+
 
 CFLAGS += -Wall
 
@@ -18,12 +21,16 @@ endif
 	@echo "[+] $(CC) $< -> $@"
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
-$(BIN): $(OBJ)
+$(BIN): $(OBJ) $(LIBBLOOM)
 	@echo "[+] $(CC) $^ -> $@"
 	@$(CC) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
+
+src/libbloom/build/libbloom.a:
+	$(MAKE) -C src/libbloom
 
 .PHONY: clean
 
 clean:
-	@echo "[+] objects and bins cleaned"
+	$(MAKE) -C src/libbloom clean
 	@rm -f $(OBJ) $(BIN)
+	@echo "[+] objects and bins cleaned"
