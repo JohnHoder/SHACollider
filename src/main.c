@@ -2,9 +2,9 @@
 #include "sha256.h"
 #include "libbloom/bloom.h"
 
-#define BITLEN 20
+#define BITLEN 72
 #define BLOOM_ELEMS 10000000
-#define BLOOM_PROB 0.0001
+#define BLOOM_PROB 0.00001
 
 
 size_t trim_hash(unsigned char* hash) {
@@ -47,7 +47,7 @@ int main(void) {
 
 #ifdef DEBUG
 		// debug print
-		for (size_t i=0; i<SHA256_HASH_SIZE; i++) {
+		for (size_t i=0; i<len; i++) {
 			printf("%02X", data[i]);
 		}
 		printf("\n");
