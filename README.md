@@ -1,6 +1,7 @@
 SHACollider
 ===========
 
+## Synopsis
 SHA-256 collision cycle finder.
 
 
