@@ -1,14 +1,17 @@
 SHACollider
 ===========
 
-## Synopsis
-SHA-256 collision cycle finder.
+
+Synopsis
+--------
+
+SHA-256 prefix collision finder via cyclic hashing.
 
 
 Acknowledgments
 ---------------
 
-This program uses a bit-oriented SHA-256 implementation written by Jens Thoms Toerring <jt@toerring.de> and published under GNU General Public License version 2 at <http://users.physik.fu-berlin.de/~jtt/sha_digest.html>.
+This program uses a bit-oriented SHA-256 implementation written by Jens Thoms Toerring <<jt@toerring.de>> and published under GNU General Public License version 2 at <http://users.physik.fu-berlin.de/~jtt/sha_digest.html>.
 
 
 License
