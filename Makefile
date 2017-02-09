@@ -34,8 +34,8 @@ $(LIBMEMENV):
 	$(MAKE) -C src/leveldb
 
 $(LIBSNAPPY):
-	src/snappy/autogen.sh
-	src/snappy/configure
+	cd src/snappy; ./autogen.sh
+	cd src/snappy; ./configure
 	$(MAKE) -C src/snappy
 
 .PHONY: clean
