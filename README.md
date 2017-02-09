@@ -8,6 +8,18 @@ Synopsis
 SHA-256 prefix collision finder via cyclic hashing.
 
 
+Usage
+-----
+
+```bash
+git clone https://github.com/JohnHoder/SHACollider
+cd SHACollider
+git submodule update --init --recorsive --remote
+make
+./shacollider
+```
+
+
 Acknowledgments
 ---------------
 
