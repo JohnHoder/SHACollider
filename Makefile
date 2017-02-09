@@ -12,9 +12,10 @@ CFLAGS += -Wall -Werror -pedantic
 DEBUG_CFLAGS = $(CFLAGS) -O0 -DDEBUG -pg -g
 CFLAGS += -O3 -march=native
 
-
+.PHONY: all
 all: $(BIN)
 
+.PHONY: debug
 debug: $(BIN)-debug
 
 .c.o:
@@ -41,7 +42,7 @@ $(LIBSNAPPY):
 	$(MAKE) -C src/snappy
 
 .PHONY: prof
-prof: debug
+prof: $(BIN)-debug
 	./$(BIN)-debug
 	gprof $(BIN)-debug gmon.out > perf-analysis.txt
 
