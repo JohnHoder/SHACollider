@@ -1,4 +1,7 @@
 shacollider
+shacollider-debug
+gmon.out
+perf-analysis.txt
 shadb/
 *.o
 *.swp

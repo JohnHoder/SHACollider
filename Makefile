@@ -8,21 +8,23 @@ LIBMEMENV = src/leveldb/out-static/libmemenv.a
 LIBSNAPPY = src/snappy/.libs/libsnappy.a
 LIBS += $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY) -lm -lpthread
 
+CFLAGS += -Wall -Werror -pedantic
+DEBUG_CFLAGS = $(CFLAGS) -O0 -DDEBUG -pg -g
+CFLAGS += -O3 -march=native
 
-CFLAGS += -Wall
 
-### DEBUG ###
-ifdef DEBUG
-	CFLAGS += -O0 -DDEBUG -pg
-else
-	CFLAGS += -O2
-endif
+all: $(BIN)
+
+debug: $(BIN)-debug
 
 .c.o:
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(BIN): $(OBJ) $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
+
+$(BIN)-debug: $(OBJ) $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY)
+	$(CXX) -o $@ $^ $(DEBUG_CFLAGS) $(LIBS) $(LDFLAGS)
 
 $(LIBBLOOM):
 	$(MAKE) -C src/libbloom
@@ -37,6 +39,11 @@ $(LIBSNAPPY):
 	cd src/snappy; ./autogen.sh
 	cd src/snappy; ./configure
 	$(MAKE) -C src/snappy
+
+.PHONY: prof
+prof: debug
+	./$(BIN)-debug
+	gprof $(BIN)-debug gmon.out > perf-analysis.txt
 
 .PHONY: clean
 clean:
