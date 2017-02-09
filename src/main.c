@@ -3,9 +3,9 @@
 #include "libbloom/bloom.h"
 #include "leveldb/include/leveldb/c.h"
 
-#define BITLEN 50
-#define BLOOM_ELEMS 50000000
-#define BLOOM_PROB 0.0000000000001
+#define BITLEN 42
+#define BLOOM_ELEMS 10000000UL
+#define BLOOM_PROB 0.0001
 
 
 size_t trim_hash(unsigned char* hash) {
@@ -22,13 +22,16 @@ size_t trim_hash(unsigned char* hash) {
 }
 
 int main(void) {
+	printf("SHACollider searching for %d-bit collision...\n", BITLEN);
+
 	// 256 bits of "random" stuff
-	unsigned char data[SHA256_HASH_SIZE] = {
+	unsigned char prev[SHA256_HASH_SIZE] = {
 		0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
 		0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA
 	};
+	unsigned char hash[SHA256_HASH_SIZE];
 
 	// initialize LevelDB
 	leveldb_t *db;
@@ -52,53 +55,43 @@ int main(void) {
 
 	// bloom filter for efficient in-memory collision detection
 	struct bloom bloom;
+	printf("Setting up bloom filter for up to %luM elems @ %f FP probability.\n",
+			BLOOM_ELEMS / 1000000, BLOOM_PROB);
 	if (bloom_init(&bloom, BLOOM_ELEMS, BLOOM_PROB)) {
 		printf("Failed to init bloom filter! Tried to allocate %.2f MB.\n",
 				(double) bloom.bytes / 1024 / 1024);
 		bloom_print(&bloom);
 		return 1;
 	}
-	printf("Bloom filter using %ld bytes (%.2f MB) with %.2f bits per element.\n",
-			bloom.bytes, (double) bloom.bytes / 1024 / 1024, bloom.bpe);
-
-	// trim the initial data and insert that into the bloom filter & db
-	size_t len = trim_hash(data);
-	bloom_add(&bloom, data, len);
-	leveldb_put(db, woptions, (char*) data, len, "", 0, &err);
-
-	if (err != NULL) {
-		printf("LevelDB write fail!\n");
-		return 1;
-	}
-
-	leveldb_free(err);
-	err = NULL;
+	printf("Bloom filter using %.2f MB (%.2f bits per element).\n",
+			(double) bloom.bytes / 1024 / 1024, bloom.bpe);
 
 	unsigned long long steps = 1;
+	unsigned long long dbqueries = 0;
 	for(;;) {
 		// calculate hash of the first BITLEN bits of data
 		SHA256_Context ctx;
 		sha256_initialize(&ctx);
-		sha256_add_bits(&ctx, &data, BITLEN);
-		sha256_calculate(&ctx, data);
+		sha256_add_bits(&ctx, &prev, BITLEN);
+		sha256_calculate(&ctx, hash);
 
 #ifdef DEBUG
 		// debug print
 		for (size_t i=0; i<len; i++) {
-			printf("%02X", data[i]);
+			printf("%02X", hash[i]);
 		}
 		printf("\n");
 #endif //DEBUG
 
 		// trim the hash
-		size_t len = trim_hash(data);
+		size_t len = trim_hash(hash);
 
 		// check if bloom filter already (probably) contains the hash
-		if (bloom_check(&bloom, data, len)) {
+		if (bloom_check(&bloom, hash, len)) {
 #ifdef DEBUG
 			printf("Found possible collision after %llu iterations :: ", steps);
 			for (size_t i=0; i<len; i++) {
-				printf("%02X", data[i]);
+				printf("%02X", hash[i]);
 			}
 			printf("\n");
 #endif
@@ -106,7 +99,7 @@ int main(void) {
 			// need to make sure it wasn't a false positive
 			// by searching for the hash in LevelDB
 			// if it's not found then continue, else break
-			read = leveldb_get(db, roptions, (char*) data, len, &read_len, &err);
+			read = leveldb_get(db, roptions, (char*) hash, len, &read_len, &err);
 
 			if (err != NULL) {
 				printf("LevelDB read fail!\n");
@@ -121,25 +114,40 @@ int main(void) {
 #ifdef DEBUG
 				printf("Candidate collision hash was a false positive.\n");
 #endif
-				continue;
+				dbqueries++;
 			} else {
 #ifdef DEBUG
 				printf("LevelDB confirmed the collision! \\o/\n");
 #endif
+				double fpr = (double) dbqueries / steps;
 				printf("Found %d-bit collision after %llu iterations :: ",
 						BITLEN, steps);
 				for (size_t i=0; i<len; i++) {
-					printf("%02X", data[i]);
+					printf("%02X", hash[i]);
 				}
 				printf("\n");
+				printf("Data with the same hash:\n");
+				printf("\t");
+				for (size_t i=0; i<read_len; i++) {
+					printf("%02X", (unsigned char) read[i]);
+				}
+				printf("\n\t");
+				for (size_t i=0; i<len; i++) {
+					printf("%02X", prev[i]);
+				}
+				printf("\n");
+				printf("Extra Queries to LevelDB: %llu (%f real FPR).\n",
+						dbqueries, fpr);
 				break;
 			}
 		}
 
 		// add the trimmed hash to the bloom filter
-		bloom_add(&bloom, data, len);
+		bloom_add(&bloom, hash, len);
 		// ...and to the database
-		leveldb_put(db, woptions, (char*) data, len, "", 0, &err);
+		leveldb_put(db, woptions, (char*) hash, len, (char*) prev, len, &err);
+		// current -> prev
+		memcpy(&prev, &hash, len);
 
 		if (steps >= BLOOM_ELEMS) {
 			// continuing would drastically increase false-positive rate
@@ -148,7 +156,6 @@ int main(void) {
 		} else {
 			// rinse and repeat
 			steps++;
-			continue;
 		}
 	}
 
