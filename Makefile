@@ -9,8 +9,7 @@ LIBSNAPPY = src/snappy/.libs/libsnappy.a
 LIBS += $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY) -lm -lpthread
 
 CFLAGS += -Wall -Werror -pedantic
-DEBUG_CFLAGS = $(CFLAGS) -O0 -DDEBUG -pg -g
-CFLAGS += -O3 -march=native
+
 
 .PHONY: all
 all: $(BIN)
@@ -22,10 +21,11 @@ debug: $(BIN)-debug
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(BIN): $(OBJ) $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY)
-	$(CXX) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
+	$(CXX) -o $@ $(CFLAGS) -O3 -march=native  $(LIBS) $(LDFLAGS)
+	strip $@
 
 $(BIN)-debug: $(OBJ) $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY)
-	$(CXX) -o $@ $^ $(DEBUG_CFLAGS) $(LIBS) $(LDFLAGS)
+	$(CXX) -o $@ $(CFLAGS) -O0 -DDEBUG -pg -g $(LIBS) $(LDFLAGS)
 
 $(LIBBLOOM):
 	$(MAKE) -C src/libbloom
