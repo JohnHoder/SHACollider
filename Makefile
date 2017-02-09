@@ -12,19 +12,17 @@ CFLAGS += -Wall
 
 ### DEBUG ###
 ifdef DEBUG
-	CFLAGS += -O0 -DDEBUG
+	CFLAGS += -O0 -DDEBUG -pg
 else
 	CFLAGS += -O2
 endif
 
 .c.o:
-	@echo "[+] $(CC) $< -> $@"
-	@$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(BIN): $(OBJ) $(LIBBLOOM) $(LIBLEVELDB)
 	# need to link with C++ linker :-/
-	@echo "[+] $(CXX) $^ -> $@"
-	@$(CXX) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
 
 $(LIBBLOOM):
 	$(MAKE) -C src/libbloom
@@ -36,9 +34,10 @@ $(LIBMEMENV):
 	$(MAKE) -C src/leveldb
 
 .PHONY: clean
-
 clean:
+	rm -f $(OBJ) $(BIN)
+
+.PHONY: distclean
+distclean:
 	$(MAKE) -C src/libbloom clean
 	$(MAKE) -C src/leveldb clean
-	@rm -f $(OBJ) $(BIN)
-	@echo "[+] objects and bins cleaned"
