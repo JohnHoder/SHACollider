@@ -10,10 +10,8 @@ LIBS += $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) -lm -lpthread -lc++
 
 CFLAGS += -Wall
 
-DEBUG = 0
-
 ### DEBUG ###
-ifeq ($(DEBUG), 1)
+ifdef DEBUG
 	CFLAGS += -O0 -DDEBUG
 else
 	CFLAGS += -O2
