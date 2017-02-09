@@ -21,7 +21,7 @@ endif
 .c.o:
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(BIN): $(OBJ) $(LIBBLOOM) $(LIBLEVELDB)
+$(BIN): $(OBJ) $(LIBBLOOM) $(LIBLEVELDB) $(LIBSNAPPY)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
 
 $(LIBBLOOM):
