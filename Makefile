@@ -5,7 +5,8 @@ OBJ = $(patsubst %.c, %.o, $(SRC))
 LIBBLOOM = src/libbloom/build/libbloom.a
 LIBLEVELDB = src/leveldb/out-static/libleveldb.a
 LIBMEMENV = src/leveldb/out-static/libmemenv.a
-LIBS += $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) -lm -lpthread -lc++
+LIBSNAPPY = src/snappy/.libs/libsnappy.a
+LIBS += $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY) -lm -lpthread
 
 
 CFLAGS += -Wall
@@ -21,7 +22,6 @@ endif
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(BIN): $(OBJ) $(LIBBLOOM) $(LIBLEVELDB)
-	# need to link with C++ linker :-/
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
 
 $(LIBBLOOM):
@@ -33,6 +33,11 @@ $(LIBLEVELDB):
 $(LIBMEMENV):
 	$(MAKE) -C src/leveldb
 
+$(LIBSNAPPY):
+	src/snappy/autogen.sh
+	src/snappy/configure
+	$(MAKE) -C src/snappy
+
 .PHONY: clean
 clean:
 	rm -f $(OBJ) $(BIN) shadb/
@@ -41,3 +46,4 @@ clean:
 distclean:
 	$(MAKE) -C src/libbloom clean
 	$(MAKE) -C src/leveldb clean
+	$(MAKE) -C src/snappy clean
