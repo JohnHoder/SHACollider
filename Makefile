@@ -3,12 +3,14 @@ DEPS = $(wildcard src/*.h) src/libbloom/bloom.h
 SRC = $(wildcard src/*.c)
 OBJ = $(patsubst %.c, %.o, $(SRC))
 LIBBLOOM = src/libbloom/build/libbloom.a
-LIBS += $(LIBBLOOM) -lm
+LIBLEVELDB = src/leveldb/out-static/libleveldb.a
+LIBMEMENV = src/leveldb/out-static/libmemenv.a
+LIBS += $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) -lm -lpthread -lc++
 
 
 CFLAGS += -Wall
 
-DEBUG = 1
+DEBUG = 0
 
 ### DEBUG ###
 ifeq ($(DEBUG), 1)
@@ -21,16 +23,24 @@ endif
 	@echo "[+] $(CC) $< -> $@"
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
-$(BIN): $(OBJ) $(LIBBLOOM)
-	@echo "[+] $(CC) $^ -> $@"
-	@$(CC) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
+$(BIN): $(OBJ) $(LIBBLOOM) $(LIBLEVELDB)
+	# need to link with C++ linker :-/
+	@echo "[+] $(CXX) $^ -> $@"
+	@$(CXX) -o $@ $^ $(CFLAGS) $(LIBS) $(LDFLAGS)
 
-src/libbloom/build/libbloom.a:
+$(LIBBLOOM):
 	$(MAKE) -C src/libbloom
+
+$(LIBLEVELDB):
+	$(MAKE) -C src/leveldb
+
+$(LIBMEMENV):
+	$(MAKE) -C src/leveldb
 
 .PHONY: clean
 
 clean:
 	$(MAKE) -C src/libbloom clean
+	$(MAKE) -C src/leveldb clean
 	@rm -f $(OBJ) $(BIN)
 	@echo "[+] objects and bins cleaned"
