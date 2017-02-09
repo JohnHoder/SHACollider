@@ -3,7 +3,7 @@
 #include "libbloom/bloom.h"
 #include "leveldb/include/leveldb/c.h"
 
-#define BITLEN 43
+#define BITLEN 50
 #define BLOOM_ELEMS 50000000
 #define BLOOM_PROB 0.0000000000001
 
@@ -95,11 +95,13 @@ int main(void) {
 
 		// check if bloom filter already (probably) contains the hash
 		if (bloom_check(&bloom, data, len)) {
+#ifdef DEBUG
 			printf("Found possible collision after %llu iterations :: ", steps);
 			for (size_t i=0; i<len; i++) {
 				printf("%02X", data[i]);
 			}
 			printf("\n");
+#endif
 
 			// need to make sure it wasn't a false positive
 			// by searching for the hash in LevelDB
@@ -116,10 +118,20 @@ int main(void) {
 
 			if (read == NULL) {
 				// not found
+#ifdef DEBUG
 				printf("Candidate collision hash was a false positive.\n");
+#endif
 				continue;
 			} else {
+#ifdef DEBUG
 				printf("LevelDB confirmed the collision! \\o/\n");
+#endif
+				printf("Found %d-bit collision after %llu iterations :: ",
+						BITLEN, steps);
+				for (size_t i=0; i<len; i++) {
+					printf("%02X", data[i]);
+				}
+				printf("\n");
 				break;
 			}
 		}
