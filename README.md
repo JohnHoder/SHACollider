@@ -13,6 +13,10 @@ Acknowledgments
 
 This program uses a bit-oriented SHA-256 implementation written by Jens Thoms Toerring <<jt@toerring.de>> and published under GNU General Public License version 2 at <http://users.physik.fu-berlin.de/~jtt/sha_digest.html>.
 
+Computed hashes are added into an in-memory bloom filter implementation by Jyri J. Virkki <<jyri@virkki.com>> released under the BSD 2-clause license and available at <https://github.com/jvirkki/libbloom> with a bugfix by Roey Berman <<roey@everything.me>>.
+
+LevelDB by Sanjay Ghemawat <<sanjay@google.com>> and Jeff Dean <<jeff@google.com>> is used to store a hash-to-data mapping on disk for verifying bloom filter hits, available under the 3-clause BSD license at <https://github.com/google/leveldb>.
+
 
 License
 -------
