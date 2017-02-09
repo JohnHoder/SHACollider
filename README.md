@@ -14,7 +14,7 @@ Usage
 ```bash
 git clone https://github.com/JohnHoder/SHACollider
 cd SHACollider
-git submodule update --init --recorsive --remote
+git submodule update --init --recursive --remote
 make
 ./shacollider
 ```
