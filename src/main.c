@@ -4,7 +4,7 @@
 
 #define BITLEN 42
 #define BLOOM_ELEMS 300000000
-#define BLOOM_PROB 0.00001
+#define BLOOM_PROB 0.000001
 
 
 size_t trim_hash(unsigned char* hash) {
@@ -32,12 +32,13 @@ int main(void) {
 	// bloom filter for efficient in-memory collision detection
 	struct bloom bloom;
 	if (bloom_init(&bloom, BLOOM_ELEMS, BLOOM_PROB)) {
-		printf("Failed to init bloom filter!\n");
+		printf("Failed to init bloom filter! Tried to allocate %.2f MB.\n",
+				(double) bloom.bytes / 1024 / 1024);
 		bloom_print(&bloom);
 		return 1;
 	}
-	printf("Bloom filter using %ld bytes (%.2f MB).\n",
-			bloom.bytes, (double) bloom.bytes / 1024 / 1024);
+	printf("Bloom filter using %ld bytes (%.2f MB) with %.2f bits per element.\n",
+			bloom.bytes, (double) bloom.bytes / 1024 / 1024, bloom.bpe);
 
 	// trim the initial data and insert that into the bloom filter
 	size_t len = trim_hash(data);
