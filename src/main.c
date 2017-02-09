@@ -74,6 +74,9 @@ int main(void) {
 		sha256_initialize(&ctx);
 		sha256_add_bits(&ctx, &prev, BITLEN);
 		sha256_calculate(&ctx, hash);
+		
+		// trim the hash
+		size_t len = trim_hash(hash);
 
 #ifdef DEBUG
 		// debug print
@@ -82,9 +85,6 @@ int main(void) {
 		}
 		printf("\n");
 #endif //DEBUG
-
-		// trim the hash
-		size_t len = trim_hash(hash);
 
 		// check if bloom filter already (probably) contains the hash
 		if (bloom_check(&bloom, hash, len)) {
