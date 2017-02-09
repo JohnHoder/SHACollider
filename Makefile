@@ -35,7 +35,7 @@ $(LIBMEMENV):
 
 .PHONY: clean
 clean:
-	rm -f $(OBJ) $(BIN)
+	rm -f $(OBJ) $(BIN) shadb/
 
 .PHONY: distclean
 distclean:
