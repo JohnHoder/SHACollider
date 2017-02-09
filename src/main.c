@@ -2,8 +2,8 @@
 #include "sha256.h"
 #include "libbloom/bloom.h"
 
-#define BITLEN 72
-#define BLOOM_ELEMS 10000000
+#define BITLEN 42
+#define BLOOM_ELEMS 300000000
 #define BLOOM_PROB 0.00001
 
 
@@ -31,7 +31,13 @@ int main(void) {
 
 	// bloom filter for efficient in-memory collision detection
 	struct bloom bloom;
-	bloom_init(&bloom, BLOOM_ELEMS, BLOOM_PROB);
+	if (bloom_init(&bloom, BLOOM_ELEMS, BLOOM_PROB)) {
+		printf("Failed to init bloom filter!\n");
+		bloom_print(&bloom);
+		return 1;
+	}
+	printf("Bloom filter using %ld bytes (%.2f MB).\n",
+			bloom.bytes, (double) bloom.bytes / 1024 / 1024);
 
 	// trim the initial data and insert that into the bloom filter
 	size_t len = trim_hash(data);
@@ -58,7 +64,7 @@ int main(void) {
 
 		// check if bloom filter already (probably) contains the hash
 		if (bloom_check(&bloom, data, len)) {
-			printf("Found possible collision after %llu steps :: ", steps);
+			printf("Found possible collision after %llu iterations :: ", steps);
 			for (size_t i=0; i<len; i++) {
 				printf("%02X", data[i]);
 			}
@@ -83,6 +89,8 @@ int main(void) {
 			continue;
 		}
 	}
+
+	bloom_free(&bloom);
 
 	return 0;
 }
