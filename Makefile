@@ -6,7 +6,7 @@ LIBBLOOM = src/libbloom/build/libbloom.a
 LIBLEVELDB = src/leveldb/out-static/libleveldb.a
 LIBMEMENV = src/leveldb/out-static/libmemenv.a
 LIBSNAPPY = src/snappy/.libs/libsnappy.a
-LIBS += $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY) -lm -lpthread
+LIBS += -lm -lpthread
 
 CFLAGS += -Wall -Werror -pedantic
 
@@ -21,11 +21,11 @@ debug: $(BIN)-debug
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(BIN): $(OBJ) $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY)
-	$(CXX) -o $@ $(CFLAGS) -O3 -march=native  $(LIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(CFLAGS) -O3 -march=native $(LIBS) $(LDFLAGS)
 	strip $@
 
 $(BIN)-debug: $(OBJ) $(LIBBLOOM) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSNAPPY)
-	$(CXX) -o $@ $(CFLAGS) -O0 -DDEBUG -pg -g $(LIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(CFLAGS) -O0 -DDEBUG -pg -g $(LIBS) $(LDFLAGS)
 
 $(LIBBLOOM):
 	$(MAKE) -C src/libbloom
