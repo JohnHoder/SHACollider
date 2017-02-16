@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <pthread.h>
-#include <string.h>
 #include "sha256.h"
 #include "libbloom/bloom.h"
 #include "leveldb/include/leveldb/c.h"
@@ -9,23 +7,6 @@
 #define BLOOM_ELEMS 10000000UL
 #define BLOOM_PROB 0.0001
 
-pthread_t tid;
-pthread_mutex_t lock;
-
-leveldb_t *db;
-struct bloom bloom;
-unsigned long long dbqueries = 0;
-
-struct threadParams {
-	unsigned char *prev;
-	unsigned char *hash;
-	leveldb_readoptions_t *roptions;
-	char *err;
-	char *read;
-	size_t read_len;
-	unsigned long long steps;
-	size_t len;
-};
 
 size_t trim_hash(unsigned char* hash) {
 	// trim the hash (in-place) to just the BITLEN prefix,
@@ -40,76 +21,7 @@ size_t trim_hash(unsigned char* hash) {
 	return len;
 }
 
-void* checkInThread(void *arg){
-
-	struct threadParams *params = arg;
-	
-	unsigned char *prev = params->prev;
-	unsigned char *hash = params->hash;
-	leveldb_readoptions_t *roptions = params->roptions;
-    char *err = params->err;
-    char *read = params->read;
-    size_t read_len = params->read_len;
-    unsigned long long steps = params->steps;
-    size_t len = params->len;
-
-	pthread_mutex_lock(&lock);
-
-	// need to make sure it wasn't a false positive
-	// by searching for the hash in LevelDB
-	// if it's not found then continue, else break
-	read = leveldb_get(db, roptions, (char*) hash, len, &read_len, &err);
-
-	if (err != NULL) {
-		printf("LevelDB read fail!\n");
-		//return 1;
-	}
-
-	leveldb_free(err);
-	err = NULL;
-
-	if (read == NULL) {
-		// not found
-		#ifdef DEBUG
-		printf("Candidate collision hash was a false positive.\n");
-		#endif
-		dbqueries++;
-	}
-	else {
-		//#ifdef DEBUG
-		printf("LevelDB confirmed the collision! \\o/\n");
-		//#endif
-		double fpr = (double) dbqueries / steps;
-		printf("Found %d-bit collision after %llu iterations :: ", BITLEN, steps);
-		for (size_t i=0; i<len; i++) {
-			printf("%02X", hash[i]);
-		}
-		printf("\n");
-		printf("Data with the same hash:\n");
-		printf("\t");
-		for (size_t i=0; i<read_len; i++) {
-			printf("%02X", (unsigned char) read[i]);
-		}
-		printf("\n\t");
-		for (size_t i=0; i<len; i++) {
-			printf("%02X", prev[i]);
-		}
-		printf("\n");
-		printf("Extra Queries to LevelDB: %llu (%f real FPR).\n", dbqueries, fpr);
-		//break;
-	}
-
-	pthread_mutex_unlock(&lock);
-    return NULL;
-}
-
 int main(void) {
-	if (pthread_mutex_init(&lock, NULL) != 0)
-	{
-		printf("\n mutex init failed\n");
-		return 1;
-	}
-
 	printf("SHACollider searching for %d-bit collision...\n", BITLEN);
 
 	// 256 bits of "random" stuff
@@ -122,7 +34,7 @@ int main(void) {
 	unsigned char hash[SHA256_HASH_SIZE];
 
 	// initialize LevelDB
-	//leveldb_t *db;
+	leveldb_t *db;
 	leveldb_options_t *options = leveldb_options_create();
 	leveldb_readoptions_t *roptions = leveldb_readoptions_create();
 	leveldb_writeoptions_t *woptions = leveldb_writeoptions_create();
@@ -142,7 +54,7 @@ int main(void) {
 	err = NULL;
 
 	// bloom filter for efficient in-memory collision detection
-	//struct bloom bloom;
+	struct bloom bloom;
 	printf("Setting up bloom filter for up to %luM elems @ %f FP probability.\n",
 			BLOOM_ELEMS / 1000000, BLOOM_PROB);
 	if (bloom_init(&bloom, BLOOM_ELEMS, BLOOM_PROB)) {
@@ -155,7 +67,7 @@ int main(void) {
 			(double) bloom.bytes / 1024 / 1024, bloom.bpe);
 
 	unsigned long long steps = 1;
-	//unsigned long long dbqueries = 0;
+	unsigned long long dbqueries = 0;
 	for(;;) {
 		// calculate hash of the first BITLEN bits of data
 		SHA256_Context ctx;
@@ -184,24 +96,50 @@ int main(void) {
 			printf("\n");
 #endif
 
-			//CHECK IN A THREAD
-			struct threadParams *params;
-			params = malloc(sizeof(*params));
+			// need to make sure it wasn't a false positive
+			// by searching for the hash in LevelDB
+			// if it's not found then continue, else break
+			read = leveldb_get(db, roptions, (char*) hash, len, &read_len, &err);
 
-			params->prev = prev;
-			params->hash = hash;
-			params->roptions = roptions;
-			params->err = err;
-			params->read = read;
-			params->read_len = read_len;
-			params->steps = steps;
-			params->len = len;
+			if (err != NULL) {
+				printf("LevelDB read fail!\n");
+				return 1;
+			}
 
-			int bck = pthread_create(&tid, NULL, &checkInThread, params);
-        	if (bck != 0){
-            	//printf("\nCan't create thread :[%s]", strerror(err));
-        	}
-			//CHECK IN A THREAD		
+			leveldb_free(err);
+			err = NULL;
+
+			if (read == NULL) {
+				// not found
+#ifdef DEBUG
+				printf("Candidate collision hash was a false positive.\n");
+#endif
+				dbqueries++;
+			} else {
+#ifdef DEBUG
+				printf("LevelDB confirmed the collision! \\o/\n");
+#endif
+				double fpr = (double) dbqueries / steps;
+				printf("Found %d-bit collision after %llu iterations :: ",
+						BITLEN, steps);
+				for (size_t i=0; i<len; i++) {
+					printf("%02X", hash[i]);
+				}
+				printf("\n");
+				printf("Data with the same hash:\n");
+				printf("\t");
+				for (size_t i=0; i<read_len; i++) {
+					printf("%02X", (unsigned char) read[i]);
+				}
+				printf("\n\t");
+				for (size_t i=0; i<len; i++) {
+					printf("%02X", prev[i]);
+				}
+				printf("\n");
+				printf("Extra Queries to LevelDB: %llu (%f real FPR).\n",
+						dbqueries, fpr);
+				break;
+			}
 		}
 
 		// add the trimmed hash to the bloom filter
@@ -235,6 +173,5 @@ int main(void) {
 	leveldb_free(err);
 	err = NULL;
 
-	pthread_mutex_destroy(&lock);
 	return 0;
 }

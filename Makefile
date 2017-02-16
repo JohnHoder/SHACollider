@@ -8,7 +8,7 @@ LIBMEMENV = src/leveldb/out-static/libmemenv.a
 LIBSNAPPY = src/snappy/.libs/libsnappy.a
 LIBS += -lm -lpthread
 
-CFLAGS += -Wall -Werror -pedantic
+CFLAGS += -Wall -pedantic
 
 
 .PHONY: all
